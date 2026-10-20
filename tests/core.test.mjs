@@ -1,0 +1,13 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {moneyToMinor,expenseSummary,validDate,csv} from '../dist/core.mjs';
+import {load,save,emptyState} from '../dist/storage.mjs';
+test('Десятичные суммы складываются в копейках',()=>assert.equal(moneyToMinor('0,10')+moneyToMinor('0.20'),30));
+test('Отклоняются отрицательные, нулевые и неточные суммы',()=>{for(const v of ['-1','0','1.001','NaN','1e2','1000000001'])assert.throws(()=>moneyToMinor(v));});
+test('Границы допустимой суммы',()=>{assert.equal(moneyToMinor('0.01'),1);assert.equal(moneyToMinor('1000000000'),100000000000);});
+test('Итоги ограничены месяцем и группируются по категориям',()=>assert.deepEqual(expenseSummary([{date:'2026-10-01',category:'Дом',amount:100},{date:'2026-10-02',category:'Дом',amount:200},{date:'2026-09-30',category:'Дом',amount:500}],'2026-10'),{total:300,count:2,categories:{Дом:300}}));
+test('Пустой месяц',()=>assert.deepEqual(expenseSummary([],'2026-10'),{total:0,count:0,categories:{}}));
+test('Несуществующая дата отклоняется',()=>{assert.equal(validDate('2026-02-30'),false);assert.equal(validDate('2024-02-29'),true);});
+test('CSV экранирует формулы и кавычки',()=>{const out=csv([['=1+1','a;"b']]);assert.ok(out.includes("'=1+1"));assert.ok(out.includes('"a;""b"'));});
+test('Хранилище сохраняет и восстанавливает расходы',()=>{const memory=new Map(),adapter={getItem:k=>memory.get(k)||null,setItem:(k,v)=>memory.set(k,v)};const state=emptyState();state.expenses.push({id:'1',date:'2026-10-20',amount:100,category:'Дом',note:'Тест'});save(state,adapter);assert.deepEqual(load(adapter),state);});
+test('Повреждённые данные не проходят незаметно',()=>{assert.throws(()=>load({getItem:()=>'{bad'}));assert.throws(()=>load({getItem:()=>JSON.stringify({version:1,expenses:[{amount:1.5}]})}));});

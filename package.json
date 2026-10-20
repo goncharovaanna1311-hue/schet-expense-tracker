@@ -1,0 +1,1 @@
+{"name":"schet-expense-tracker","version":"1.0.0","private":true,"type":"module","description":"Счёт — самостоятельный веб-MVP трекера расходов","engines":{"node":">=22"},"scripts":{"start":"node server.mjs","test":"node --test tests/*.test.mjs"}}

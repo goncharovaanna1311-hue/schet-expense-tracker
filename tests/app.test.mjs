@@ -1,0 +1,20 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+test('Создание, редактирование, фильтр, валидация и удаление расходов',async()=>{
+const app={innerHTML:'',events:{},addEventListener(k,v){this.events[k]=v;}},memory=new Map(),error={textContent:''};
+globalThis.document={querySelector:s=>s==='#app'?app:{style:{},textContent:'',focus(){}}};
+globalThis.window={addEventListener(){}};globalThis.localStorage={getItem:k=>memory.get(k)||null,setItem:(k,v)=>memory.set(k,v)};
+globalThis.FormData=class{constructor(form){return new Map(Object.entries(form.values));}};globalThis.confirm=()=>true;
+await import('../dist/app.mjs');
+const read=()=>JSON.parse([...memory.values()][0]);
+const submit=values=>app.events.submit({preventDefault(){},target:{id:'expense-form',values,querySelector:()=>error}});
+const click=data=>app.events.click({target:{closest:()=>({dataset:data})}});
+const item={amount:'0.10',category:'Дом',date:'2026-10-20',note:'<script>'};
+submit(item);submit({...item,amount:'0.20',note:'Второй'});assert.equal(read().expenses.reduce((n,x)=>n+x.amount,0),30);assert.match(app.innerHTML,/&lt;script&gt;/);
+const id=read().expenses[0].id;click({action:'edit-expense',id});submit({...item,amount:'1.00',note:'Изменено'});assert.equal(read().expenses.length,2);assert.equal(read().expenses[0].amount,100);
+const before=read();submit({...item,amount:'-1'});assert.deepEqual(read(),before);assert.ok(error.textContent);
+submit({...item,category:'несуществующая'});assert.deepEqual(read(),before);
+app.events.change({target:{id:'month',value:'2026-09'}});assert.match(app.innerHTML,/В этом месяце пока нет расходов/);
+app.events.change({target:{id:'month',value:'2026-10'}});assert.match(app.innerHTML,/Изменено/);
+click({action:'delete-expense',id});assert.equal(read().expenses.length,1);
+});

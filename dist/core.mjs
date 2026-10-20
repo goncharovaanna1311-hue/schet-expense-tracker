@@ -1,0 +1,6 @@
+export function dateKey(date=new Date()){return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;}
+export function shiftDay(key,offset){const [y,m,d]=key.split('-').map(Number);return dateKey(new Date(y,m-1,d+offset,12));}
+export function validDate(key){return /^\d{4}-\d{2}-\d{2}$/.test(key)&&shiftDay(key,0)===key;}
+export function moneyToMinor(value){const str=String(value).trim().replace(',','.');if(!/^\d+(\.\d{1,2})?$/.test(str))throw Error('Введите положительную сумму с точностью до копеек.');const [whole,frac='']=str.split('.');const n=Number(whole)*100+Number(frac.padEnd(2,'0'));if(!Number.isSafeInteger(n)||n<=0||n>100000000000)throw Error('Сумма должна быть от 0,01 до 1 000 000 000 ₽.');return n;}
+export function expenseSummary(rows,month){const selected=rows.filter(x=>x.date.startsWith(month));return {total:selected.reduce((n,x)=>n+x.amount,0),categories:selected.reduce((out,x)=>(out[x.category]=(out[x.category]||0)+x.amount,out),{}),count:selected.length};}
+export function csv(rows){return '\ufeff'+rows.map(row=>row.map(v=>'"'+String(v).replace(/^[=+@\-\t\r]/,"'$&").replaceAll('"','""')+'"').join(';')).join('\r\n');}
